@@ -1,0 +1,311 @@
+# Tutorial at:
+# http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/118-principal-component-analysis-in-r-prcomp-vs-princomp/
+# Chapter "Theory behind PCA results"
+
+# AND:
+# http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/
+
+library(dplyr)
+library(cowplot)
+library(ggplot2)
+library(tidyverse)
+
+# Choose one PCA
+pca <- prcomp(iris[,-5], scale. = T)
+pca <- prcomp(mtcars, scale. = T)
+
+# Get variable loadings
+loadings <- pca$rotation
+sdev <- pca$sdev
+
+# Get eigenvalues, variance explained,
+# cumulative variance explained:
+# eigenvalues = (standard deviation)^2
+# variance explained = eigenvalues / tot eigenvalues
+# cumulative variance = cumulative variance explained
+eig <- tibble(
+  PC = colnames(loadings),
+  eigenvalues = sdev^2,
+  var.perc = (eigenvalues/sum(eigenvalues)) * 100,
+  cum.var.perc = cumsum(var.perc)
+)
+
+# Plotting variance explained and eigenvalues
+top.limit <- ceiling(max(eig$var.perc)/10) * 10
+ggplot(eig, aes(x = factor(PC, levels = colnames(loadings)), 
+                y = var.perc)) +
+  geom_col(fill = "steelblue3") +
+  geom_line(aes(group = 1), color = "gray30") +
+  geom_point(aes(color = "eigenvalues")) +
+  geom_text(aes(label = round(eig$eigenvalues, 2)),
+            hjust = 0, vjust = -0.5, size = 3) +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  scale_y_continuous(expand = c(0,0),
+                     limits = c(0, top.limit)) +
+  scale_color_manual(values = "gray30") +
+  theme(axis.ticks.x = element_blank(),
+        panel.grid.major.x = element_blank(),
+        legend.key.width = unit(.5, "lines"),
+        legend.background = element_blank(),
+        legend.key = element_rect(fill = "transparent"),
+        legend.justification = c(1,1),
+        legend.position = c(1,1),
+        legend.title = element_blank(),
+        legend.margin = margin(0,.7,0,0, "lines")) +
+  xlab("Principal components") +
+  ylab("Explained variance (%)")
+
+# Get coordinates for variables (loadings X standard deviation)
+var.coord <- t(t(loadings) * sdev)
+# Get quality of representation on the factor map (coordinates^2)
+var.cos2 <- var.coord^2
+# Get variable contributions to the PCs (relative importance)
+var.contrib <- t(t((var.cos2*100)) / colSums(var.cos2))
+
+
+# Total contribution of variables on PCs with eigenvalue > 1
+var.contrib[,eig$eigenvalues > 1] %>%
+  as_tibble(rownames = "var") %>%
+  mutate(total = rowSums(select_if(., is.numeric)),
+         var = fct_reorder(var, total, .fun = sum, .desc = T)) %>%
+ggplot(aes(x = var, y = total)) +
+  geom_col(fill = "steelblue3") +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  scale_y_continuous(expand = expand_scale(add = c(0, 1))) +
+  theme(panel.grid.major.x = element_blank()) +
+  xlab("Original variables") +
+  ylab("Contribution on PCs (eigenvalue > 1)")
+
+
+# Plot variable coordinates (each coordinate is the corralation
+# betaween the variable and the principal components)
+limit <- ceiling(sqrt(max(max(var.coord)^2, min(var.coord)^2)))
+circle <- tibble(
+  circle = seq(pi, -pi, length.out = 100),
+  x = sin(circle),
+  y = cos(circle)
+) 
+ggplot(data.frame(var.coord, lab = rownames(var.coord)), 
+       aes(x = 0, y = 0)) +
+  geom_path(data = circle, aes(x = x, y = y), inherit.aes = F,
+            size = 0.24, linetype = 3) +
+  geom_hline(yintercept = 0, linetype = 2, size = 0.24) +
+  geom_vline(xintercept = 0, linetype = 2, size = 0.24) +
+  geom_segment(aes(xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(.5, "lines")),
+               size = 0.5) +
+  geom_text(aes(x = PC1, y = PC2, label = lab), vjust = -.5) +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  theme(panel.grid = element_blank()) +
+  coord_equal(xlim = c(-limit, limit), ylim = c(-limit, limit),
+             expand = T) +
+  xlab(paste0("PC1 (", round(eig$var.perc[1], 2), "%)")) +
+  ylab(paste0("PC2 (", round(eig$var.perc[2], 2), "%)"))
+
+# Plot model function
+plot_model <- function(formula, data){
+  vars <- as.character(formula)[-1]
+  model <- lm(formula, data = data)
+  coefs <- coef(model)
+  
+  ggplot(mtcars, aes_string(x = vars[2], y = vars[1])) +
+    geom_abline(intercept = coefs[1], slope = coefs[2],
+                size = .5) +
+    geom_point() +
+    theme_bw(base_size = 8, base_line_size = 0.24,
+             base_family = "Helvetica")
+  
+}
+
+# Plot correlation between variables
+# pointing in the same direction and variables
+# pointing into opposite directions
+plot_grid(plot_model(drat ~ wt, mtcars), # oppiste directions
+          plot_model(disp ~ wt, mtcars)) # same direction
+
+
+# Quality of variables on PC
+as_tibble(var.cos2, rownames = "variables") %>%
+  tidyr::gather("PC", "value", -variables) %>%
+ggplot(aes(x = factor(PC, levels = colnames(loadings)), 
+           y = variables, fill = value)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = ifelse(value > 0.009, round(value, 2), "")),
+            size = 3) +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  coord_cartesian(expand = F) +
+  theme(axis.ticks = element_blank(),
+        legend.position = "none") +
+  scale_fill_viridis_c(option = "C") +
+  xlab("Principal components") +
+  ylab("Variables")
+
+# Total quality on PCs with eigenvalue > 1
+var.cos2[,eig$eigenvalues > 1] %>%
+  as_tibble(rownames = "var") %>%
+  mutate(total = rowSums(select_if(., is.numeric)),
+         var = fct_reorder(var, total, .fun = sum, .desc = T)) %>%
+ggplot(aes(x = var, y = total)) +
+  geom_col(fill = "steelblue3") +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  scale_y_continuous(expand = expand_scale(add = c(0, 0.1))) +
+  theme(panel.grid.major.x = element_blank()) +
+  xlab("Variables") +
+  ylab("Quality of variables on PCs (eigenvalue > 1)")
+
+
+# variable clustering
+set.seed(12345)
+1:10 %>%
+  map(kmeans, x = var.coord) %>%
+  map_dbl("tot.withinss") %>%
+  tibble(
+    sos = .,
+    clusters = 1:10
+    ) %>%
+ggplot(aes(x = clusters, y = sos)) +
+  geom_vline(xintercept = 3, linetype = 2, color = "red", size = 0.24) +
+  geom_line(size = 0.4) +
+  geom_point(shape = 21, fill= "white", color = "black", size = 2) +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica")
+
+k <- kmeans(x = var.coord, centers = 3)
+
+# Plotting variables according to clusters
+data.frame(var.coord, lab = rownames(var.coord), group = k$cluster) %>%
+ggplot(aes(x = 0, y = 0, color = as.factor(group))) +
+  geom_hline(yintercept = 0, linetype = 2, size = 0.24) +
+  geom_vline(xintercept = 0, linetype = 2, size = 0.24) +
+  geom_segment(aes(xend = PC1, yend = PC2),
+               arrow = arrow(length = unit(.5, "lines")),
+               size = 0.5) +
+  geom_text(aes(x = PC1, y = PC2, label = lab), vjust = -.5) +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  theme(panel.grid = element_blank()) +
+  coord_equal(xlim = c(-limit, limit), ylim = c(-limit, limit),
+              expand = T) +
+  xlab(paste0("PC1 (", round(eig$var.perc[1], 2), "%)")) +
+  ylab(paste0("PC2 (", round(eig$var.perc[2], 2), "%)"))
+
+# Coordinates for individuals
+ind.coord <- pca$x
+
+# Center of gravity and scaling factor for variables
+pca$center
+pca$scale
+
+# Distance between observations of center of gravity:
+# dist = ( ( values - (center of gravity) ) / scale )^2
+d2 <- colSums(((t(mtcars) - pca$center)/pca$scale)^2)
+
+# Compute cos2 (the sum of each row is 1)
+ind.cos2 <- ind.coord^2/d2
+
+# Contribution of individuals
+ind.contrib <- t( ( t(ind.coord^2) / sdev^2 ) * 100 * ( 1/nrow(ind.coord) ) ) 
+
+# biplot, variable coordinates are rescaled according to
+# individual coordinates
+var.coord.plot <- sapply(1:ncol(var.coord), function(i){
+  # rescaling
+  scales::rescale(var.coord[,i], to = range(ind.coord[,i])) * .8
+})
+colnames(var.coord.plot) <- colnames(var.coord)
+var.coord.plot <- as_tibble(var.coord.plot, rownames = "vars")
+var.coord.plot$group <- k$cluster
+
+# plotting
+ind.coord %>%
+  as_tibble(rownames = "cars") %>%
+ggplot(aes(x = PC1, y = PC2)) +
+  geom_hline(yintercept = 0, linetype = 2, size = 0.24) +
+  geom_vline(xintercept = 0, linetype = 2, size = 0.24) +
+  geom_point() +
+  geom_text(aes(label = cars), vjust = -.5, size = 3) +
+  geom_segment(data = var.coord.plot, aes(x = 0, y = 0, 
+                                          xend = PC1, yend = PC2,
+                                          color = as.factor(group)),
+               arrow = arrow(length = unit(.5, "lines")),
+               size = 0.5) +
+  geom_text(data = var.coord.plot, aes(label = vars, color = as.factor(group)), 
+            vjust = -.5) +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  theme(panel.grid = element_blank())
+
+
+# Multiplying variable contrib for individual contrib
+# and make proportions. (Probably wrong)
+cbind(est = t(prop.table(var.contrib %*% t(ind.contrib), 2) * 100)["Porsche 914-2",],
+      real = t(mtcars["Porsche 914-2",]),
+      mean.pop = colMeans(mtcars)) 
+
+# Clusterof individuals (also variables were clustered see above)
+set.seed(1234)
+1:(nrow(mtcars)-1) %>%
+  map(kmeans, x = ind.coord) %>%
+  map_dbl("tot.withinss") %>%
+  tibble(
+    sos = .,
+    clusters = 1:(nrow(mtcars)-1)
+  ) %>%
+  ggplot(aes(x = clusters, y = sos)) +
+  geom_vline(xintercept = 6, linetype = 2, color = "red", size = 0.24) +
+  geom_line(size = 0.4) +
+  geom_point(shape = 21, fill= "white", color = "black", size = 2) +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica")
+k <- kmeans(ind.coord, 7)
+
+# Plotting variables clustered and individual clustered
+library(ggnewscale)
+p1 <- ind.coord %>%
+  as_tibble(rownames = "cars") %>%
+  mutate(group = factor(k$cluster)) %>%
+ggplot(aes(x = PC1, y = PC2)) +
+  geom_hline(yintercept = 0, linetype = 2, size = 0.24) +
+  geom_vline(xintercept = 0, linetype = 2, size = 0.24) +
+  geom_point(aes(color = group)) +
+  geom_text(aes(label = cars, color = group), vjust = -.5, size = 3) +
+  scale_color_brewer(palette = "Set1") +
+  new_scale_color() +
+  geom_segment(data = var.coord.plot, aes(x = 0, y = 0, 
+                                          xend = PC1, yend = PC2,
+                                          color = as.factor(group)),
+               arrow = arrow(length = unit(.5, "lines")),
+               size = 0.5) +
+  geom_text(data = var.coord.plot, aes(label = vars, color = as.factor(group)), 
+            vjust = -.5) +
+  scale_color_viridis_d(option = "E") +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  theme(panel.grid = element_blank())
+
+p2 <- mtcars %>%
+  scale() %>%
+  as_tibble(rownames = "car") %>%
+  mutate(group = factor(k$cluster)) %>%
+  gather("variable", "value", -car, -group) %>%
+  group_by(variable) %>%
+  mutate(sd = sd(value)) %>%
+  filter(sd != 0) %>%
+  ungroup() %>%
+  mutate(variable = fct_inorder(variable)) %>%
+ggplot(aes(x = variable, y = value)) +
+  geom_polygon(aes(group = car), 
+               fill = "transparent",
+               color = alpha("black", 1/3)) +
+  coord_polar() +
+  facet_wrap(~group) +
+  theme_bw(base_size = 8, base_line_size = 0.24,
+           base_family = "Helvetica") +
+  theme(strip.background = element_blank())
+
+plot_grid(p1, p2)

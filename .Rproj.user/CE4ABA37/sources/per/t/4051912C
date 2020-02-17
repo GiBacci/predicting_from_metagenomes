@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1576059332444.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2490273924",
+    "id" : "4051912C",
+    "lastKnownWriteTime" : 1571752662,
+    "last_content_update" : 1571752662,
+    "path" : "~/Dropbox/Scripts/R/pca_examples.R",
+    "project_path" : null,
+    "properties" : {
+        "cursorPosition" : "69,34",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 3,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}

@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1581334422457.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1127314828",
+    "id" : "DE027454",
+    "lastKnownWriteTime" : 1581094296,
+    "last_content_update" : 1581094296,
+    "path" : "~/Dropbox/Predicting_from_metagenomes/bib/bibliography.bib",
+    "project_path" : "bib/bibliography.bib",
+    "properties" : {
+        "cursorPosition" : "15,31",
+        "scrollLine" : "14"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 2,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "text"
+}

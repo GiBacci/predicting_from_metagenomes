@@ -1,0 +1,25 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1581334322990.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "2668646335",
+    "id" : "8E612C1F",
+    "lastKnownWriteTime" : 1581334737,
+    "last_content_update" : 1581334737410,
+    "path" : "~/Dropbox/Predicting_from_metagenomes/Predicting_from_metagenomes.Rmd",
+    "project_path" : "Predicting_from_metagenomes.Rmd",
+    "properties" : {
+        "cursorPosition" : "5,97",
+        "scrollLine" : "0"
+    },
+    "read_only" : false,
+    "read_only_alternatives" : [
+    ],
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_markdown"
+}
