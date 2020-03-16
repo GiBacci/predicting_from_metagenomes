@@ -36,6 +36,7 @@ sample_data(phylo) <- meta
 # enough assignments
 phylo <- subset_samples(phylo, Sample != "M34")
 phylo <- subset_samples(phylo, Name.File != "CF_ABM24SS_t1M16")
+phylo <- tax_glom(phylo, "s")
 
 sample.names <- str_split(sample_names(phylo), "_|-") %>%
   map_chr(~paste(.[2:3], collapse = "_"))
@@ -43,19 +44,18 @@ sample_names(phylo) <- sample.names
 
 # Removing G24 t1 since it has too few reads
 phylo <- prune_samples(sample_sums(phylo) > 0, phylo)
+phylo <- filter_taxa(phylo, function(x) sum(sign(x)) > nsamples(phylo) * .2, T)
 
 # Building matrix ad saving
-taxa.ab <- otu_table(phylo)
-class(taxa.ab) <- "matrix"
-attr(taxa.ab, "taxa_are_rows") <- NULL
+taxa.ab <- as(otu_table(phylo), "matrix")
 
-taxa.meta <- sample_data(phylo)
-class(taxa.meta) <- "data.frame"
+taxa.meta <- as(sample_data(phylo), "data.frame")
 saveRDS(taxa.meta, "./data/sample_meta.rds")
 
 rownames(taxa.ab) <- tax_table(phylo) %>% as_tibble() %>% pull(s)
 taxa.ab <- taxa.ab[!is.na(rownames(taxa.ab)),]
 taxa.ab <- t(prop.table(taxa.ab, 2))
+
 saveRDS(taxa.ab, "./data/taxa_ab.rds")
 
 # Listing directories and extracting only those with gene calling
@@ -151,6 +151,9 @@ gene.counts <- gene.counts[rownames(taxa.ab),]
 saveRDS(gene.counts, "./data/gene_counts.rds")
 
 gene.meta <- readRDS("/home/giovannib/Dropbox/CF_longitudinal_metagenome/gene_assignments/annotations.rds")
-gene.meta <- as.data.frame(gene.meta)
+gene.meta <- gene.meta %>%
+  as.data.frame() %>%
+  rename_all(gsub, pattern = " ", replacement = "_") %>%
+  separate_rows(COG_cat, sep = ", ")
 gene.meta <- gene.meta[match(colnames(gene.counts), gene.meta$best.og),]
 saveRDS(gene.meta, "./data/gene_meta.rds")

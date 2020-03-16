@@ -5,15 +5,16 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "103872037",
+    "hash" : "1262532292",
     "id" : "201F5639",
-    "lastKnownWriteTime" : 1576859446,
-    "last_content_update" : 1576859446941,
+    "lastKnownWriteTime" : 1584379526,
+    "last_content_update" : 1584379526490,
     "path" : "~/Dropbox/Predicting_from_metagenomes/Predicting_from_metagenomes.Rmd",
     "project_path" : "Predicting_from_metagenomes.Rmd",
     "properties" : {
-        "cursorPosition" : "6,0",
-        "scrollLine" : "0"
+        "cursorPosition" : "372,263",
+        "ignored_words" : "metagenomes,metagenomics,Metagenomics,Antonie,microbiome,commensal,macroorgansims,magabase,omics,metagenomic,datasets,rds,genotype,eggNOG,transcriptomics,transcriptomic,metabarcoding,rRNA,compositional,dimensionality,DESeq,amplicon,ChIP,randomForest,Breiman,kernlab,gbm,pROC,ggplot,ggbeeswarm,geoms,multcompView,RStudio,overdispersed,reproducibility,dataset,programmatically,resamples,resampling,homozygous,heterozygous,Gini,Tukey,hoc,pairways,differentially\n",
+        "scrollLine" : "366"
     },
     "relative_order" : 1,
     "source_on_save" : false,

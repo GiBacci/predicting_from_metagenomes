@@ -5,14 +5,14 @@
     "dirty" : false,
     "encoding" : "UTF-8",
     "folds" : "",
-    "hash" : "1711263223",
+    "hash" : "16540270",
     "id" : "6A2F87A3",
-    "lastKnownWriteTime" : 1576859161,
-    "last_content_update" : 1576859161501,
+    "lastKnownWriteTime" : 1584117398,
+    "last_content_update" : 1584117398163,
     "path" : "~/Dropbox/Predicting_from_metagenomes/bib/bibliography.bib",
     "project_path" : "bib/bibliography.bib",
     "properties" : {
-        "cursorPosition" : "0,23",
+        "cursorPosition" : "11,9",
         "scrollLine" : "0"
     },
     "relative_order" : 3,
