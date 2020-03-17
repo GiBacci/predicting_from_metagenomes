@@ -2,22 +2,16 @@
 title: "Host trait prediction from high-resolution microbial features"
 author: "Giovanni Bacci^1^*  \n^1^Department of Biology, University of Florence, Via Madonna del Piano 6, Sesto Fiorentino, FI, I-50019, Italy  \n*Corresponding author: giovanni.bacci@unifi.it"
 output: word_document
-bibliography: /home/giovannib/Dropbox/Predicting_from_metagenomes/bib/bibliography.bib
-csl: /home/giovannib/Dropbox/Predicting_from_metagenomes/bib/springer-basic-brackets-no-et-al.csl
-
-# bibliography: /Users/giovanni/Dropbox/Predicting_from_metagenomes/bib/bibliography.bib
-# csl: /Users/giovanni/Dropbox/Predicting_from_metagenomes/bib/bib_style.csl
+bibliography: ./bib/bibliography.bib
+csl: ./bib/springer-basic-brackets-no-et-al.csl
 ---
 
 ```{r setup, include=FALSE}
 library(DESeq2)
 library(compositions)
-
 library(vegan)
-
 library(caret)
 library(pROC)
-
 library(tidyverse)
 library(ggbeeswarm)
 library(patchwork)
@@ -279,7 +273,7 @@ top10 <- quantile(v.imp$imp, .9)
 top.vars <- as.character(v.imp[v.imp$imp >= top10,"vars"])
 
 # Plotting
-ggplot(v.imp, aes(x = var.type, y = imp)) +
+figure.2 <- ggplot(v.imp, aes(x = var.type, y = imp)) +
   geom_quasirandom(shape = 1) +
   geom_hline(yintercept = top10,
              linetype = 2,
@@ -288,6 +282,7 @@ ggplot(v.imp, aes(x = var.type, y = imp)) +
            base_line_size = 0.25) +
   xlab("Predictor type") +
   ylab("Mean decrease in Gini coefficient")
+figure.2
 ```
 
 Since we used orthogonal representations of the original microbial features to train our model, we need to extract the contribution of each original feature to the most important variables detected above (Figure 2). To get original contributions we need to calculate their coordinates on principal components (PCs). To do this, we multiply each PC by its standard deviation; then we use resulting coordinates to obtain the representation quality of a variable on a given PC called squared cosine [@herve2010singular]. The relative contribution of a variable can finally be obtained by dividing the squared cosine by its sum over each PC. All these steps are included in a single function called `varContrib`. To finally inspect the contribution of taxa and genes on selected PCs we use the R base function `rowMeans` after selecting top components only (all implemented in the _ad-hoc_ function `formatDataFromContrib`).
@@ -342,7 +337,7 @@ knitr::kable(s[[1]], caption = "Table 2: Analysis of variance results showing th
 
 At this stage we may be interested in which categories have an higher contribution on our model and we can inspect that using the Tukey post-hoc test implemented in the `TukeyHSD` function. The p-values of all the pairways comparisons returned by the function are converted into a character-based encoding using the `multcompLetters` function of the package `multcompView`. Results are then plotted with `ggplot2` (Figure 3).
 
-```{r genesPlot, fig.width=5, fig.height=3, fig.cap="Figure 3: Tukey post-hoc test results. Different COG categories are reported following standard notation. Bars represent the mean contribution for each category whereas error bars represent the upper confidence limit for the observations."}
+```{r genesPlot, fig.width=10, fig.height=3, fig.cap="Figure 3: Tukey post-hoc test results. Different COG categories are reported following standard notation. Bars represent the mean contribution for each category whereas error bars represent the upper confidence limit for the observations."}
 # Tukey post-hoc test
 tuk <- TukeyHSD(genes.aov)
 
@@ -358,7 +353,7 @@ genes.mean$COG_cat <- reorder(genes.mean$COG_cat, genes.mean$y)
 genes.mean <- merge(genes.mean, labs)
 
 # Plotting
-ggplot(genes.mean, aes(x = COG_cat, y = y, ymin = ymin, ymax = ymax)) +
+figure.3 <- ggplot(genes.mean, aes(x = COG_cat, y = y, ymin = ymin, ymax = ymax)) +
   geom_errorbar(width = .3) +
   geom_col() +
   geom_text(aes(label = labs, y = ymax), vjust = -1,
@@ -368,6 +363,7 @@ ggplot(genes.mean, aes(x = COG_cat, y = y, ymin = ymin, ymax = ymax)) +
            base_line_size = 0.25) +
   ylab("Contribution on selected components (%)") +
   xlab("COG categories")
+figure.3
 ```
 
 A similar approach can be applied to taxonomic data by extracting the genus affiliation from species names. This time we will inspect if different genera differentially impact the contribution on selected PCs using the same approach that we used above but with different data. This time differences are not significant (p-value higher than the significance level of 0.05, Table 3) so we will avoid doing any post-hoc test but we will plot the average contribution of each bacterial species to the selected PCs (Figure 4).
@@ -389,16 +385,42 @@ s <- summary(taxa.aov)
 knitr::kable(s[[1]], caption = "Table 3: Analysis of variance results showing the effect of different bacterial genera on taxa contributions. Df, degrees of freedom; Sum Sq, sum of squares (deviance); Mean Sq, mean square (variance); F value, value of F statistic; Pr(>F), p-value associated to the F statistic.")
 ```
 
-```{r taxaContribPlot, fig.width=6, fig.height=6, fig.height=3, fig.cap="Figure 4: Average contribution of bacterial species on the selected variables."}
+```{r taxaContribPlot, fig.width=6, fig.height=4.5, fig.cap="Figure 4: Average contribution of bacterial species on the selected variables."}
 # Mean plotting
-ggplot(taxa.contrib, aes(x = taxa, y = contrib)) +
+figure.4 <- ggplot(taxa.contrib, aes(x = taxa, y = contrib)) +
   geom_col() +
   theme_bw(base_size = 10, base_family = "Helvetica",
            base_line_size = 0.25) +
   scale_y_continuous(expand = expand_scale(add = c(0,0.1))) +
   theme(axis.text.x = element_text(angle=90, hjust = 1, vjust = 0.5)) +
-  ylab("Contribution on selected components (%)") +
+  ylab("Contribution on\nselected components (%)") +
   xlab("Bacterial species")
+figure.4
 ```
+
+```{r savingPlots, echo=F}
+# Figure 1
+setEPS()
+postscript("Figure_1.eps", width = 4.5, height = 6)
+old <- par(mfrow = c(3, 2), oma=c(0,3,1,0))
+invisible(sapply(model.list, rocCurve, model.test))
+mtext( 'Train data', side=3, line=-1, at=.28, outer=TRUE, cex=.8, font = 2)
+mtext( 'Test data', side=3, line=-1, at=.77, outer=TRUE, cex=.8, font = 2)
+mtext( 'RF', side=3, line=-2.9, at=-.04, outer=TRUE, cex=.8, font = 2)
+mtext( 'GBM', side=3, line=-18, at=-.03, outer=TRUE, cex=.8, font = 2)
+mtext( 'SVM', side=3, line=-32.8, at=-.03, outer=TRUE, cex=.8, font = 2)
+par(old)
+dev.off()
+
+# Figure 2
+ggsave("Figure_2.eps", figure.2, width = 4, height = 3)
+
+# Figure 3
+ggsave("Figure_3.eps", figure.3, width = 10, height = 3)
+
+# Figure 4
+ggsave("Figure_4.eps", figure.4, width = 6, height = 4.5)
+```
+
 
 ## References
